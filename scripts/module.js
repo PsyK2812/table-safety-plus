@@ -371,10 +371,58 @@ function findTableSafetyTarget() {
   return null;
 }
 
+// Layout is applied inline so it works even if Foundry's own (layered) styles win
+// over the module stylesheet.
+function styleTableSafetyControl(control) {
+  Object.assign(control.style, {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "stretch",
+    gap: "0",
+    width: "100%",
+    flex: "0 0 auto",
+    boxSizing: "border-box",
+    margin: "4px 0"
+  });
+  const buttons = [...control.querySelectorAll("button")];
+  buttons.forEach((b, i) => {
+    const first = i === 0, last = i === buttons.length - 1;
+    Object.assign(b.style, {
+      flex: "1 1 0",
+      minWidth: "0",
+      width: "auto",
+      margin: "0",
+      borderRadius: first && last ? "6px" : first ? "6px 0 0 6px" : last ? "0 6px 6px 0" : "0"
+    });
+  });
+}
+
+function injectTableSafetyStyles() {
+  if (document.getElementById("table-safety-plus-styles")) return;
+  const style = document.createElement("style");
+  style.id = "table-safety-plus-styles";
+  style.textContent = `
+@keyframes table-safety-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 239, 237, 0.7); background-color: #ccccc0; }
+  50%  { box-shadow: 0 0 20px 10px rgba(231, 76, 60, 0.4); background-color: #fd672b; }
+  100% { box-shadow: 0 0 0 0 rgba(255, 239, 237, 0.7); background-color: #ccccc0; }
+}
+.table-safety .table-safety-acknowledge.active {
+  animation: table-safety-pulse 1.5s infinite ease-in-out;
+  border: 1px solid #4e3534;
+}`;
+  document.head.appendChild(style);
+}
+
 function attachTableSafetyControl() {
   if (game.release.generation < 13) return;
   if (!game.ready || !socket) return;
-  tableSafetyControl ??= buildTableSafetyControl();
+  if (!tableSafetyControl) {
+    injectTableSafetyStyles();
+    tableSafetyControl = buildTableSafetyControl();
+    styleTableSafetyControl(tableSafetyControl);
+  }
   const target = findTableSafetyTarget();
   if (!target) {
     console.warn("Table Safety Plus | Could not find the chat controls to attach to.");
