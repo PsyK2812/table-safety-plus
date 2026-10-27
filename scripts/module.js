@@ -371,31 +371,50 @@ function findTableSafetyTarget() {
   return null;
 }
 
-// Layout is applied inline so it works even if Foundry's own (layered) styles win
-// over the module stylesheet.
+// Make the bar look like (and line up with) the message-mode buttons above it.
+// Classes are copied from Foundry's own mode bar; sizes are applied inline so
+// the result doesn't depend on the module stylesheet winning the cascade.
 function styleTableSafetyControl(control) {
-  Object.assign(control.style, {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    alignItems: "stretch",
-    gap: "0",
-    width: "100%",
-    flex: "0 0 auto",
-    boxSizing: "border-box",
-    margin: "4px 0"
-  });
+  const modeButton = document.querySelector('[data-action="messageMode"]');
+  const group = modeButton?.parentElement;
   const buttons = [...control.querySelectorAll("button")];
-  buttons.forEach((b, i) => {
-    const first = i === 0, last = i === buttons.length - 1;
-    Object.assign(b.style, {
-      flex: "1 1 0",
-      minWidth: "0",
-      width: "auto",
-      margin: "0",
-      borderRadius: first && last ? "6px" : first ? "6px 0 0 6px" : last ? "0 6px 6px 0" : "0"
+  const ours = ["table-safety-button", "table-safety-acknowledge"];
+
+  if (group && modeButton) {
+    // Same frame as the mode bar
+    control.className = `${group.className} table-safety`.replace(/\bactive\b/g, "").trim();
+    const gs = getComputedStyle(group);
+    Object.assign(control.style, {
+      display: "flex",
+      flexDirection: "row",
+      flexWrap: "nowrap",
+      width: "fit-content",
+      maxWidth: "100%",
+      alignSelf: "flex-start",
+      flex: "0 0 auto",
+      gap: gs.gap,
+      marginTop: gs.marginBottom && gs.marginBottom !== "0px" ? "0" : "6px"
     });
+
+    // Same size and look as a mode button
+    const modeClasses = [...modeButton.classList].filter(c => !["active", "selected"].includes(c));
+    const w = modeButton.offsetWidth, h = modeButton.offsetHeight;
+    buttons.forEach(btn => {
+      const keep = ours.filter(c => btn.classList.contains(c));
+      btn.className = [...modeClasses, ...keep].join(" ");
+      if (w) btn.style.width = `${w}px`;
+      if (h) btn.style.height = `${h}px`;
+      btn.style.flex = "0 0 auto";
+    });
+    return;
+  }
+
+  // Older layouts (v13): simple row of equal buttons
+  Object.assign(control.style, {
+    display: "flex", flexDirection: "row", flexWrap: "nowrap",
+    gap: "0", width: "100%", flex: "0 0 auto", margin: "4px 0"
   });
+  buttons.forEach(btn => Object.assign(btn.style, { flex: "1 1 0", minWidth: "0", width: "auto" }));
 }
 
 function injectTableSafetyStyles() {
@@ -421,8 +440,9 @@ function attachTableSafetyControl() {
   if (!tableSafetyControl) {
     injectTableSafetyStyles();
     tableSafetyControl = buildTableSafetyControl();
-    styleTableSafetyControl(tableSafetyControl);
   }
+  // Re-style every time: the mode bar may not have had a size on first render
+  styleTableSafetyControl(tableSafetyControl);
   const target = findTableSafetyTarget();
   if (!target) {
     console.warn("Table Safety Plus | Could not find the chat controls to attach to.");
