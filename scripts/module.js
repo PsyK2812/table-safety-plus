@@ -346,21 +346,28 @@ function buildTableSafetyControl() {
 }
 
 // Find the best place to put the buttons, newest Foundry layout first.
+// The bar is placed as its own row (never inside the mode button group).
 function findTableSafetyTarget() {
   const input = document.querySelector("#chat-message");
-  const scope = input?.closest("form, .chat-form, section, .chat-input, #chat-notifications, #chat") ?? document;
 
-  // v14 message-mode control, then v13 roll privacy, then generic chat controls
-  const modeButton = scope.querySelector('[data-action="messageMode"]') ?? document.querySelector('[data-action="messageMode"]');
-  if (modeButton?.parentElement) return { parent: modeButton.parentElement, mode: "append" };
-
+  // v14 message-mode group, then v13 roll privacy, then generic chat controls
+  let group = document.querySelector('[data-action="messageMode"]')?.parentElement;
   for (const sel of ["#roll-privacy", "#chat-controls", ".chat-controls"]) {
-    const el = scope.querySelector(sel) ?? document.querySelector(sel);
-    if (el) return { parent: el, mode: "append" };
+    if (group) break;
+    group = document.querySelector(sel);
   }
 
+  if (group && input) {
+    // Climb from the group to the ancestor that shares a container with the input,
+    // then sit directly after it (i.e. between the mode buttons and the text box).
+    let row = group;
+    while (row.parentElement && !row.parentElement.contains(input)) row = row.parentElement;
+    if (row.parentElement) return { parent: row.parentElement, ref: row.nextSibling };
+  }
+  if (group?.parentElement) return { parent: group.parentElement, ref: group.nextSibling };
+
   // Last resort: directly above the chat text box
-  if (input?.parentElement) return { parent: input.parentElement, mode: "before", ref: input };
+  if (input?.parentElement) return { parent: input.parentElement, ref: input };
   return null;
 }
 
@@ -373,11 +380,9 @@ function attachTableSafetyControl() {
     console.warn("Table Safety Plus | Could not find the chat controls to attach to.");
     return;
   }
-  if (target.mode === "append") {
-    if (tableSafetyControl.parentElement !== target.parent) target.parent.appendChild(tableSafetyControl);
-  } else if (tableSafetyControl.nextElementSibling !== target.ref) {
-    target.parent.insertBefore(tableSafetyControl, target.ref);
-  }
+  const ref = target.ref === tableSafetyControl ? tableSafetyControl.nextSibling : target.ref;
+  if (tableSafetyControl.parentElement === target.parent && tableSafetyControl.nextSibling === ref) return;
+  target.parent.insertBefore(tableSafetyControl, ref);
 }
 
 // Re-attach whenever the chat input moves or the chat log re-renders
