@@ -1,3 +1,17 @@
+# Table Safety Plus
+
+Fork of [Table Safety](https://github.com/VoltaicGRiD/table-safety) by Dustin Conlon (VoltaicGRiD), patched to work on Foundry VTT v14.
+
+**Changes from the original 1.4.0**
+- Buttons no longer depend on the removed `#roll-privacy` element; they attach next to v14's message-mode control (falling back to older layouts or above the chat box).
+- Buttons are re-attached when the chat input moves (sidebar, collapsed notifications, popout).
+- Uses the v13+ `game.togglePause` signature.
+- New module id `table-safety-plus` so it can be installed alongside the original.
+
+Manifest URL: `https://github.com/PsyK2812/table-safety-plus/releases/latest/download/module.json`
+
+---
+
 # Table Safety
 
 Built to work alongside other safety tools, and utilizing the [TTRPG Safety Toolkit](https://ttrpgsafetytoolkit.com) as its primary inspiration.
