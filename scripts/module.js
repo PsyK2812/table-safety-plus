@@ -300,6 +300,7 @@ function makeButton(icon, tooltipKey, extraClasses, onclick) {
   i.classList.add("fa-solid", icon);
   button.appendChild(i);
   button.type = "button";
+  button.dataset.tsIcon = icon;
   button.classList.add("ui-control", "icon", "table-safety-button", ...extraClasses);
   button.dataset.tooltip = game.i18n.localize(tooltipKey);
   button.onclick = onclick;
@@ -397,11 +398,18 @@ function styleTableSafetyControl(control) {
     });
 
     // Same size and look as a mode button
-    const modeClasses = [...modeButton.classList].filter(c => !["active", "selected"].includes(c));
+    // Copy the mode button's classes, but not its state or its Font Awesome icon
+    const isIcon = c => c === "fa" || /^fa[srlbd]?$/.test(c) || c.startsWith("fa-");
+    const modeClasses = [...modeButton.classList].filter(c => !["active", "selected"].includes(c) && !isIcon(c));
+    // If Foundry puts the icon on the button itself, do the same instead of using a child <i>
+    const iconOnButton = [...modeButton.classList].some(isIcon);
     const w = modeButton.offsetWidth, h = modeButton.offsetHeight;
     buttons.forEach(btn => {
       const keep = ours.filter(c => btn.classList.contains(c));
-      btn.className = [...modeClasses, ...keep].join(" ");
+      const iconClasses = iconOnButton ? ["fa-solid", btn.dataset.tsIcon] : [];
+      btn.className = [...modeClasses, ...iconClasses, ...keep].join(" ");
+      const child = btn.querySelector("i");
+      if (child) child.style.display = iconOnButton ? "none" : "";
       if (w) btn.style.width = `${w}px`;
       if (h) btn.style.height = `${h}px`;
       btn.style.flex = "0 0 auto";
